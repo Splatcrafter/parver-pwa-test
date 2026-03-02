@@ -5,6 +5,8 @@ import de.splatgames.software.external.afbb.parverpwatest.model.PushMessage;
 import de.splatgames.software.external.afbb.parverpwatest.model.PushSubscription;
 import nl.martijndwars.webpush.Notification;
 import nl.martijndwars.webpush.PushService;
+import org.apache.http.HttpResponse;
+import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -46,14 +48,28 @@ public class PushNotificationService {
                         sub.keys().auth(),
                         payload.getBytes()
                 );
-                pushService.send(notification);
-                sent++;
+                HttpResponse response = pushService.send(notification);
+                int statusCode = response.getStatusLine().getStatusCode();
+                String responseBody = response.getEntity() != null
+                        ? EntityUtils.toString(response.getEntity())
+                        : "";
+
+                if (statusCode == 201) {
+                    sent++;
+                    log.info("Push sent successfully to endpoint: ...{}", sub.endpoint().substring(sub.endpoint().length() - 30));
+                } else {
+                    log.error("Push failed with status {}: {} | Endpoint: ...{}", statusCode, responseBody, sub.endpoint().substring(sub.endpoint().length() - 30));
+                    if (statusCode == 404 || statusCode == 410) {
+                        subscriptions.remove(sub.endpoint());
+                        log.info("Removed expired subscription");
+                    }
+                }
             } catch (Exception e) {
-                log.warn("Failed to send push to {}: {}", sub.endpoint(), e.getMessage());
+                log.error("Exception sending push to {}: {}", sub.endpoint(), e.getMessage(), e);
                 subscriptions.remove(sub.endpoint());
             }
         }
-        log.info("Sent push notification to {} subscribers", sent);
+        log.info("Push result: {}/{} successful", sent, subscriptions.size() + (subscriptions.size() - sent));
         return sent;
     }
 
