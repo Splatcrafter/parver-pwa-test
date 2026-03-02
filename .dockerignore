@@ -1,0 +1,9 @@
+**/target/
+**/node_modules/
+frontend/node/
+.idea/
+.git/
+*.iml
+*.iws
+*.ipr
+.DS_Store

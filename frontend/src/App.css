@@ -1,0 +1,335 @@
+/* === Reset & Base === */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --primary: #6366f1;
+  --primary-hover: #4f46e5;
+  --bg: #0f172a;
+  --bg-card: #1e293b;
+  --bg-card-hover: #334155;
+  --text: #f1f5f9;
+  --text-muted: #94a3b8;
+  --success: #22c55e;
+  --error: #ef4444;
+  --warning: #f59e0b;
+  --info: #38bdf8;
+  --border: #334155;
+  --radius: 12px;
+  --gap: 16px;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f1f5f9;
+    --bg-card: #ffffff;
+    --bg-card-hover: #f8fafc;
+    --text: #0f172a;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+  }
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* === Header === */
+.app-header {
+  background: linear-gradient(135deg, var(--primary), #8b5cf6);
+  padding: 2rem var(--gap);
+  text-align: center;
+  color: white;
+}
+
+.header-content h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+
+.subtitle {
+  opacity: 0.9;
+  margin-top: 0.25rem;
+  font-size: 1.1rem;
+}
+
+.connection-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 0.75rem;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* === Card Grid === */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: var(--gap);
+  padding: var(--gap);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+@media (max-width: 400px) {
+  .card-grid {
+    grid-template-columns: 1fr;
+    padding: 12px;
+    gap: 12px;
+  }
+}
+
+/* === Feature Card === */
+.feature-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.feature-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.feature-card.unsupported {
+  opacity: 0.7;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 0.5rem;
+}
+
+.card-header h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.card-description {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* === Badges === */
+.badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.badge-supported {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--success);
+}
+
+.badge-unsupported {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--error);
+}
+
+/* === Buttons === */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.btn-secondary {
+  background: var(--border);
+  color: var(--text);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--bg-card-hover);
+}
+
+.btn-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* === Status Messages === */
+.status-success {
+  color: var(--success);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.status-error {
+  color: var(--error);
+  font-size: 0.85rem;
+}
+
+.status-info {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.text-success { color: var(--success); font-weight: 600; }
+.text-error { color: var(--error); font-weight: 600; }
+
+/* === Result Box === */
+.result-box {
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 8px;
+  padding: 0.75rem;
+  font-size: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* === Offline Indicator === */
+.offline-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.offline-indicator.online {
+  background: rgba(34, 197, 94, 0.1);
+  color: var(--success);
+}
+
+.offline-indicator.offline {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--error);
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dot-online {
+  background: var(--success);
+  box-shadow: 0 0 6px var(--success);
+}
+
+.dot-offline {
+  background: var(--error);
+  box-shadow: 0 0 6px var(--error);
+}
+
+/* === Camera === */
+.camera-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.camera-preview {
+  width: 100%;
+  max-height: 240px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: #000;
+}
+
+.captured-photo {
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-top: 0.5rem;
+}
+
+/* === Battery === */
+.battery-visual {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.battery-bar {
+  flex: 1;
+  height: 20px;
+  background: var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.battery-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.battery-percent {
+  font-weight: 700;
+  font-size: 1rem;
+  min-width: 3em;
+  text-align: right;
+}
+
+/* === Push Controls === */
+.push-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* === Footer === */
+.app-footer {
+  text-align: center;
+  padding: 1.5rem var(--gap);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
