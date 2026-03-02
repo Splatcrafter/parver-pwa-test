@@ -1,4 +1,6 @@
 /// <reference types="vite/client" />
+
+declare const __BUILD_TIME__: string;
 /// <reference types="vite-plugin-pwa/vanillajs" />
 /// <reference types="vite-plugin-pwa/info" />
 

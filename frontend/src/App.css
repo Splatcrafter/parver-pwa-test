@@ -333,3 +333,10 @@ body {
   color: var(--text-muted);
   font-size: 0.85rem;
 }
+
+.build-info {
+  font-size: 0.7rem;
+  opacity: 0.5;
+  margin-top: 0.25rem;
+  font-family: monospace;
+}

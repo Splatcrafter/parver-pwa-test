@@ -41,6 +41,7 @@ function App() {
 
       <footer className="app-footer">
         <p>PWA Showcase Demo &mdash; splatgames.software</p>
+        <p className="build-info">Build: {__BUILD_TIME__}</p>
       </footer>
     </div>
   );
