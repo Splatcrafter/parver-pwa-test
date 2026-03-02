@@ -2,7 +2,7 @@ services:
   pwa-showcase:
     build: .
     ports:
-      - "8080:8080"
+      - "41990:8080"
     environment:
       - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:-}
       - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY:-}
