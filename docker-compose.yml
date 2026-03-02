@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   pwa-showcase:
-    build: .
+    image: ghcr.io/splatcrafter/parver-pwa-test:latest
     ports:
       - "41990:8080"
     environment:
