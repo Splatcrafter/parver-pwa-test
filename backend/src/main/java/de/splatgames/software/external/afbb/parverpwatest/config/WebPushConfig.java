@@ -1,19 +1,22 @@
 package de.splatgames.software.external.afbb.parverpwatest.config;
 
 import nl.martijndwars.webpush.PushService;
+import org.bouncycastle.jce.ECNamedCurveTable;
 import org.bouncycastle.jce.interfaces.ECPrivateKey;
 import org.bouncycastle.jce.interfaces.ECPublicKey;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.jce.spec.ECNamedCurveParameterSpec;
+import org.bouncycastle.jce.spec.ECPrivateKeySpec;
+import org.bouncycastle.jce.spec.ECPublicKeySpec;
+import org.bouncycastle.math.ec.ECPoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.security.GeneralSecurityException;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.Security;
+import java.math.BigInteger;
+import java.security.*;
 import java.security.spec.ECGenParameterSpec;
 import java.util.Base64;
 
@@ -31,16 +34,20 @@ public class WebPushConfig {
     @Value("${vapid.subject:mailto:demo@splatgames.de}")
     private String vapidSubject;
 
-    private void ensureKeysGenerated() throws GeneralSecurityException {
-        if (vapidPublicKey.isBlank() || vapidPrivateKey.isBlank()) {
-            Security.addProvider(new BouncyCastleProvider());
-            log.info("No VAPID keys configured - generating new keypair...");
-            KeyPair keyPair = generateKeyPair();
+    private KeyPair vapidKeyPair;
 
-            ECPublicKey bcPublicKey = (ECPublicKey) keyPair.getPublic();
+    @Bean
+    public PushService pushService() throws GeneralSecurityException {
+        Security.addProvider(new BouncyCastleProvider());
+
+        if (vapidPublicKey.isBlank() || vapidPrivateKey.isBlank()) {
+            log.info("No VAPID keys configured - generating new keypair...");
+            vapidKeyPair = generateKeyPair();
+
+            ECPublicKey bcPublicKey = (ECPublicKey) vapidKeyPair.getPublic();
             byte[] publicKeyBytes = bcPublicKey.getQ().getEncoded(false);
 
-            ECPrivateKey bcPrivateKey = (ECPrivateKey) keyPair.getPrivate();
+            ECPrivateKey bcPrivateKey = (ECPrivateKey) vapidKeyPair.getPrivate();
             byte[] privateKeyBytes = toUnsignedByteArray(bcPrivateKey.getD().toByteArray(), 32);
 
             vapidPublicKey = Base64.getUrlEncoder().withoutPadding().encodeToString(publicKeyBytes);
@@ -48,26 +55,18 @@ public class WebPushConfig {
 
             log.info("Generated VAPID Public Key:  {}", vapidPublicKey);
             log.info("Generated VAPID Private Key: {}", vapidPrivateKey);
-            log.info("Set these as environment variables VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY to persist them.");
         } else {
-            Security.addProvider(new BouncyCastleProvider());
+            log.info("Using configured VAPID keys");
+            vapidKeyPair = reconstructKeyPair(vapidPublicKey, vapidPrivateKey);
         }
-    }
 
-    @Bean
-    public PushService pushService() throws GeneralSecurityException {
-        ensureKeysGenerated();
-
-        PushService pushService = new PushService();
-        pushService.setPublicKey(vapidPublicKey);
-        pushService.setPrivateKey(vapidPrivateKey);
-        pushService.setSubject(vapidSubject);
+        // Use KeyPair directly instead of string-based setPublicKey/setPrivateKey
+        PushService pushService = new PushService(vapidKeyPair, vapidSubject);
         return pushService;
     }
 
     @Bean
     public String vapidPublicKeyString(PushService pushService) {
-        // Dependency on pushService ensures keys are generated first
         return vapidPublicKey;
     }
 
@@ -75,6 +74,25 @@ public class WebPushConfig {
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("EC", "BC");
         keyGen.initialize(new ECGenParameterSpec("prime256v1"));
         return keyGen.generateKeyPair();
+    }
+
+    private KeyPair reconstructKeyPair(String publicKeyBase64, String privateKeyBase64) throws GeneralSecurityException {
+        ECNamedCurveParameterSpec spec = ECNamedCurveTable.getParameterSpec("prime256v1");
+        KeyFactory keyFactory = KeyFactory.getInstance("EC", "BC");
+
+        // Reconstruct public key from raw uncompressed point
+        byte[] publicKeyBytes = Base64.getUrlDecoder().decode(publicKeyBase64);
+        ECPoint point = spec.getCurve().decodePoint(publicKeyBytes);
+        ECPublicKeySpec pubSpec = new ECPublicKeySpec(point, spec);
+        PublicKey publicKey = keyFactory.generatePublic(pubSpec);
+
+        // Reconstruct private key from raw scalar
+        byte[] privateKeyBytes = Base64.getUrlDecoder().decode(privateKeyBase64);
+        BigInteger d = new BigInteger(1, privateKeyBytes);
+        ECPrivateKeySpec privSpec = new ECPrivateKeySpec(d, spec);
+        PrivateKey privateKey = keyFactory.generatePrivate(privSpec);
+
+        return new KeyPair(publicKey, privateKey);
     }
 
     private byte[] toUnsignedByteArray(byte[] bytes, int length) {
