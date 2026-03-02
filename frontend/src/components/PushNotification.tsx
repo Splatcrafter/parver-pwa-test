@@ -1,17 +1,34 @@
 import { FeatureCard } from './FeatureCard';
 import { usePushSubscription } from '../hooks/usePushSubscription';
-import { sendTestNotification } from '../utils/pushManager';
 import { useState } from 'react';
 
 export function PushNotification() {
   const { subscription, loading, error, permissionState, subscribe, unsubscribe } = usePushSubscription();
   const [sending, setSending] = useState(false);
+  const [sendResult, setSendResult] = useState<string | null>(null);
   const supported = 'serviceWorker' in navigator && 'PushManager' in window;
 
   const handleSend = async () => {
     setSending(true);
+    setSendResult(null);
     try {
-      await sendTestNotification();
+      const response = await fetch('/api/push/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: 'PWA Showcase',
+          body: 'Push-Benachrichtigung erfolgreich gesendet!',
+          icon: '/icons/icon-192.png'
+        })
+      });
+      const data = await response.json();
+      if (data.sent > 0) {
+        setSendResult(`Gesendet an ${data.sent} Gerät(e). Prüfe deine Benachrichtigungen!`);
+      } else {
+        setSendResult('Keine aktiven Subscriptions gefunden. Versuche Push erneut zu aktivieren.');
+      }
+    } catch (err) {
+      setSendResult(`Fehler: ${err instanceof Error ? err.message : 'Senden fehlgeschlagen'}`);
     } finally {
       setSending(false);
     }
@@ -46,6 +63,11 @@ export function PushNotification() {
             </div>
           )}
 
+          {sendResult && (
+            <div className={sendResult.startsWith('Fehler') || sendResult.startsWith('Keine') ? 'status-error' : 'status-success'}>
+              {sendResult}
+            </div>
+          )}
           {error && <div className="status-error">{error}</div>}
         </div>
       )}

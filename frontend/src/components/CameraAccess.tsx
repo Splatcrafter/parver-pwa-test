@@ -1,39 +1,47 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { FeatureCard } from './FeatureCard';
 
 export function CameraAccess() {
   const [active, setActive] = useState(false);
+  const [ready, setReady] = useState(false);
   const [photo, setPhoto] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
   const supported = !!navigator.mediaDevices?.getUserMedia;
 
-  const videoCallbackRef = useCallback((node: HTMLVideoElement | null) => {
-    videoRef.current = node;
-    if (node && streamRef.current) {
-      node.srcObject = streamRef.current;
-      node.play().catch(() => {});
-    }
+  useEffect(() => {
+    return () => {
+      streamRef.current?.getTracks().forEach(track => track.stop());
+    };
   }, []);
 
   const startCamera = async () => {
     setError(null);
     setPhoto(null);
+    setReady(false);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' }
+        video: { facingMode: { ideal: 'environment' } }
       });
       streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
       setActive(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Kamera-Zugriff fehlgeschlagen');
     }
   };
 
+  const handleCanPlay = () => {
+    setReady(true);
+  };
+
   const takePhoto = () => {
     const video = videoRef.current;
-    if (!video || video.videoWidth === 0) return;
+    if (!video || video.videoWidth === 0 || video.videoHeight === 0) return;
     const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -44,7 +52,11 @@ export function CameraAccess() {
   const stopCamera = () => {
     streamRef.current?.getTracks().forEach(track => track.stop());
     streamRef.current = null;
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
     setActive(false);
+    setReady(false);
     setPhoto(null);
   };
 
@@ -56,18 +68,30 @@ export function CameraAccess() {
     >
       {!supported ? (
         <div className="status-error">Kamera-API nicht verfügbar</div>
-      ) : !active ? (
-        <button className="btn btn-primary" onClick={startCamera}>
-          Kamera starten
-        </button>
       ) : (
-        <div className="camera-container">
-          <video ref={videoCallbackRef} autoPlay playsInline muted className="camera-preview" />
-          <div className="btn-group">
-            <button className="btn btn-primary" onClick={takePhoto}>Foto aufnehmen</button>
-            <button className="btn btn-secondary" onClick={stopCamera}>Kamera stoppen</button>
+        <>
+          <div className="camera-container" style={{ display: active ? 'flex' : 'none' }}>
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              onCanPlay={handleCanPlay}
+              className="camera-preview"
+            />
+            {ready && (
+              <div className="btn-group">
+                <button className="btn btn-primary" onClick={takePhoto}>Foto aufnehmen</button>
+                <button className="btn btn-secondary" onClick={stopCamera}>Kamera stoppen</button>
+              </div>
+            )}
           </div>
-        </div>
+          {!active && (
+            <button className="btn btn-primary" onClick={startCamera}>
+              Kamera starten
+            </button>
+          )}
+        </>
       )}
       {photo && (
         <div className="photo-result">
