@@ -49,6 +49,7 @@ bin/
 
 # Node
 node_modules/
+**/node/
 
 # Claude Code
 /.claude/
