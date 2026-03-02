@@ -1,13 +1,21 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { FeatureCard } from './FeatureCard';
 
 export function CameraAccess() {
   const [active, setActive] = useState(false);
   const [photo, setPhoto] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const supported = !!navigator.mediaDevices?.getUserMedia;
+
+  const videoCallbackRef = useCallback((node: HTMLVideoElement | null) => {
+    videoRef.current = node;
+    if (node && streamRef.current) {
+      node.srcObject = streamRef.current;
+      node.play().catch(() => {});
+    }
+  }, []);
 
   const startCamera = async () => {
     setError(null);
@@ -17,9 +25,6 @@ export function CameraAccess() {
         video: { facingMode: 'environment' }
       });
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
       setActive(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Kamera-Zugriff fehlgeschlagen');
@@ -27,11 +32,12 @@ export function CameraAccess() {
   };
 
   const takePhoto = () => {
-    if (!videoRef.current) return;
+    const video = videoRef.current;
+    if (!video || video.videoWidth === 0) return;
     const canvas = document.createElement('canvas');
-    canvas.width = videoRef.current.videoWidth;
-    canvas.height = videoRef.current.videoHeight;
-    canvas.getContext('2d')!.drawImage(videoRef.current, 0, 0);
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d')!.drawImage(video, 0, 0);
     setPhoto(canvas.toDataURL('image/jpeg'));
   };
 
@@ -39,6 +45,7 @@ export function CameraAccess() {
     streamRef.current?.getTracks().forEach(track => track.stop());
     streamRef.current = null;
     setActive(false);
+    setPhoto(null);
   };
 
   return (
@@ -55,7 +62,7 @@ export function CameraAccess() {
         </button>
       ) : (
         <div className="camera-container">
-          <video ref={videoRef} autoPlay playsInline className="camera-preview" />
+          <video ref={videoCallbackRef} autoPlay playsInline muted className="camera-preview" />
           <div className="btn-group">
             <button className="btn btn-primary" onClick={takePhoto}>Foto aufnehmen</button>
             <button className="btn btn-secondary" onClick={stopCamera}>Kamera stoppen</button>
