@@ -1,7 +1,11 @@
 package de.splatgames.software.external.afbb.parverpwatest.config;
 
 import nl.martijndwars.webpush.PushService;
+import org.bouncycastle.jce.ECNamedCurveTable;
+import org.bouncycastle.jce.interfaces.ECPrivateKey;
+import org.bouncycastle.jce.interfaces.ECPublicKey;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.jce.spec.ECNamedCurveParameterSpec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,10 +40,18 @@ public class WebPushConfig {
         if (vapidPublicKey.isBlank() || vapidPrivateKey.isBlank()) {
             log.info("No VAPID keys configured - generating new keypair...");
             KeyPair keyPair = generateKeyPair();
-            vapidPublicKey = Base64.getUrlEncoder().withoutPadding()
-                    .encodeToString(keyPair.getPublic().getEncoded());
-            vapidPrivateKey = Base64.getUrlEncoder().withoutPadding()
-                    .encodeToString(keyPair.getPrivate().getEncoded());
+
+            // Extract raw uncompressed EC point (65 bytes) for public key
+            ECPublicKey bcPublicKey = (ECPublicKey) keyPair.getPublic();
+            byte[] publicKeyBytes = bcPublicKey.getQ().getEncoded(false);
+
+            // Extract raw private key scalar (32 bytes)
+            ECPrivateKey bcPrivateKey = (ECPrivateKey) keyPair.getPrivate();
+            byte[] privateKeyBytes = toUnsignedByteArray(bcPrivateKey.getD().toByteArray(), 32);
+
+            vapidPublicKey = Base64.getUrlEncoder().withoutPadding().encodeToString(publicKeyBytes);
+            vapidPrivateKey = Base64.getUrlEncoder().withoutPadding().encodeToString(privateKeyBytes);
+
             log.info("Generated VAPID Public Key:  {}", vapidPublicKey);
             log.info("Generated VAPID Private Key: {}", vapidPrivateKey);
             log.info("Set these as environment variables VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY to persist them.");
@@ -58,8 +70,21 @@ public class WebPushConfig {
     }
 
     private KeyPair generateKeyPair() throws GeneralSecurityException {
+        ECNamedCurveParameterSpec paramSpec = ECNamedCurveTable.getParameterSpec("prime256v1");
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("EC", "BC");
         keyGen.initialize(new ECGenParameterSpec("prime256v1"));
         return keyGen.generateKeyPair();
+    }
+
+    private byte[] toUnsignedByteArray(byte[] bytes, int length) {
+        // BigInteger.toByteArray() may have a leading zero byte for sign
+        if (bytes.length == length) return bytes;
+        byte[] result = new byte[length];
+        if (bytes.length > length) {
+            System.arraycopy(bytes, bytes.length - length, result, 0, length);
+        } else {
+            System.arraycopy(bytes, 0, result, length - bytes.length, bytes.length);
+        }
+        return result;
     }
 }
