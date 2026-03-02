@@ -3,6 +3,7 @@ package de.splatgames.software.external.afbb.parverpwatest.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.splatgames.software.external.afbb.parverpwatest.model.PushMessage;
 import de.splatgames.software.external.afbb.parverpwatest.model.PushSubscription;
+import nl.martijndwars.webpush.Encoding;
 import nl.martijndwars.webpush.Notification;
 import nl.martijndwars.webpush.PushService;
 import org.apache.http.HttpResponse;
@@ -48,7 +49,7 @@ public class PushNotificationService {
                         sub.keys().auth(),
                         payload.getBytes()
                 );
-                HttpResponse response = pushService.send(notification);
+                HttpResponse response = pushService.send(notification, Encoding.AES128GCM);
                 int statusCode = response.getStatusLine().getStatusCode();
                 String responseBody = response.getEntity() != null
                         ? EntityUtils.toString(response.getEntity())
